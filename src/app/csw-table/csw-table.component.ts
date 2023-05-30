@@ -9,7 +9,7 @@ import {
   Iso19115Record,
   Iso19115RecordDiv,
 } from 'src/lib/models';
-import { getCSWRecords, getRecordsUrl } from '../../lib/csw';
+import { getCSWRecords, getRecordsUrl, cswRecordsExists } from '../../lib/csw';
 import { FileDialogComponent } from '../file-dialog/file-dialog.component';
 import { FilterDialogComponent } from '../filter-dialog/filter-dialog.component';
 import { saveAs } from 'file-saver';
@@ -25,11 +25,11 @@ const DEFAULT_CQL_QUERY = "type='dataset' AND keyword='basisset novex'";
 @Component({
   selector: 'app-csw-table',
   templateUrl: './csw-table.component.html',
-  styleUrls: ['./csw-table.component.css']
+  styleUrls: ['./csw-table.component.css'],
 })
 export class CswTableComponent implements OnInit {
   title = 'novex-dataset-app';
-  cswEndpoint = 'https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw';
+  cswEndpoint = 'https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw'; // 'https://ngr.acceptatie.nationaalgeoregister.nl/geonetwork/srv/dut/csw'
   displayedColumns: string[] = [
     'mdId',
     'title',
@@ -71,7 +71,7 @@ export class CswTableComponent implements OnInit {
         filter: filter,
       },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe((result: any) => {
       let filterValues: string[] = result as string[];
       let filter: Filter = {
         filterColumn: filterColumn,
@@ -150,7 +150,7 @@ export class CswTableComponent implements OnInit {
       data: {},
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe((result: any) => {
       this.csvData = result.csvData;
       this.mdIdColumnCsv = result.mdIdColumn;
 
@@ -173,14 +173,32 @@ export class CswTableComponent implements OnInit {
       this.dataSource
         .filter((x) => x.csvMatched !== csvMatched.True)
         .map((x) => (x.csvMatched = csvMatched.False));
-      csvRecordsNotMatched.map((x) => {
-        let record = new Iso19115RecordDiv();
-        record.mdId = x[this.mdIdColumnCsv];
-        record.csvMatched = csvMatched.RecordNotInCatalog;
-        this.dataSource.push(record);
-      });
 
-      this.displayedColumns.push('csvMatched');
+      let ids: string[] = csvRecordsNotMatched.map(
+        (x) => x['metadata-identifier']
+      );
+      cswRecordsExists(this.cswEndpoint, ids)
+        .then((result) => {
+          csvRecordsNotMatched.map((x) => {
+            let record = new Iso19115RecordDiv();
+            record.mdId = x[this.mdIdColumnCsv];
+            if (result[record.mdId]) {
+              record.csvMatched = csvMatched.RecordInCatalogNoKeyword;
+            } else {
+              record.csvMatched = csvMatched.RecordNotInCatalog;
+            }
+            this.dataSource.push(record);
+          });
+          this.displayedColumns.push('csvMatched');
+        })
+        .catch((error) => {
+          alert(
+            `something went wrong retrieving the unmatched records from the CSW service: ${this.cswEndpoint}, see the console.log for the specific error message.`
+          );
+          console.error(error);
+          this.dataSource = []; // TODO: improve above code so that if the call to cswRecordsExists nothing happened, now we reset the view to not show partial results
+          this.dataView = [];
+        });
     });
   }
   public get csvMatched() {
@@ -209,6 +227,8 @@ export class CswTableComponent implements OnInit {
           return 'notInCsv';
         case csvMatched.RecordNotInCatalog:
           return 'notInNGR';
+        case csvMatched.RecordInCatalogNoKeyword:
+          return 'inNGRNoKeyword';
         default:
           return '';
       }

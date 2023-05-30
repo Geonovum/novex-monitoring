@@ -9,6 +9,37 @@ export var getRecordsUrl = (
   return `${cswEndpoint}?request=GetRecords&Service=CSW&Version=2.0.2&typeNames=gmd:MD_Metadata&constraint=${cqlQuery}&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&outputSchema=http://www.isotc211.org/2005/gmd&elementSetName=full&resultType=${resultType}`;
 };
 
+export var cswRecordsExists = async (
+  cswEndpoint: string,
+  ids: string[]
+): Promise<{
+  [key: string]: boolean;
+}> => {
+  let result: { [key: string]: boolean } = {};
+  return await Promise.all( // TODO: add error handling in case request fails - unsure what happens if the request to retrieve the non-matched records fail
+    ids
+      .map(
+        (id) =>
+          `${cswEndpoint}?SERVICE=CSW&version=2.0.2&REQUEST=GetRecords&resultType=hits&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&constraint=identifier=%27${id}%27&elementSetName=full&outputSchema=http://www.isotc211.org/2005/gmd&typeNames=gmd:MD_Metadata`
+      )
+      .map((url) => fetch(url))
+  )
+    .then((responses) => Promise.all(responses.map((res) => res.text())))
+    .then((texts) => {
+      for (const [i, v] of ids.entries()) {
+        let parser = new DOMParser();
+        let xmlDoc = parser.parseFromString(texts[i], 'text/xml');
+        let recordsNodes = xmlDoc.querySelectorAll('SearchResults');
+        let nrMatched: string | null = recordsNodes[0].getAttribute(
+          'numberOfRecordsMatched'
+        );
+        let nrMatchedInt = parseInt(nrMatched !== null ? nrMatched : '-1');
+        result[v] = nrMatchedInt === 1;
+      }
+      return result;
+    });
+};
+
 var getCswPromises = async (
   cswEndpoint: string,
   cqlQuery: string,
