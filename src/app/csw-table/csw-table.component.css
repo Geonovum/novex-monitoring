@@ -26,6 +26,10 @@
   background-color: #fffce9;
 }
 
+.inNGRNoKeyword{
+  background-color: #EBE9FF;
+}
+
 .filterActive {
   background-color: #ff4081;
   color: white;

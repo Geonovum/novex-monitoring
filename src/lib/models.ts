@@ -22,6 +22,7 @@ export enum csvMatched {
   True = 'true',
   False = 'false',
   RecordNotInCatalog = 'recordNotInCatalog',
+  RecordInCatalogNoKeyword = 'RecordInCatalogNoKeyword'
 }
 export class Iso19115RecordDiv extends Iso19115Record {
   constructor(
