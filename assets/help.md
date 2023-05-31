@@ -36,9 +36,10 @@ Na het succesvol uploaden en toepassen van het CSV-bestand wordt een kolom toege
 &nbsp;
 |kleur                                                                                                                              |waarde              |beschrijving                            |
 |-----------------------------------------------------------------------------------------------------------------------------------|--------------------|----------------------------------------|
-|<div style="display:inline-block;background-color: #e6ffec;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div> |`true`              | Metadata record zowel in NGR als in CSV|
-|<div style="display:inline-block;background-color:#ffebe9;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div>  | `false`            | Metadata record in NGR, maar niet in CSV|
-|<div style="display:inline-block;background-color:#fffce9;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div>  |`recordNotInCatalog`| Metadata record niet in NGR, maar wel in CSV|
+|<div style="display:inline-block;background-color: #e6ffec;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div> |`In NGR with keyword - In CSV` | Record aanwezig in NGR met `basisset NOVEX` keyword en aanwezig in CSV bestand |
+|<div style="display:inline-block;background-color:#ffebe9;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div>  | `In NGR with keyword - Not in CSV`            | Record aanwezig in NGR met `basisset NOVEX` keyword, niet aanwezig in CSV bestand |
+|<div style="display:inline-block;background-color:#fffce9;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div>  |`Not in NGR - In CSV`| Record niet aanwezig in NGR, maar wel aanwezig in CSV bestand |
+|<div style="display:inline-block;background-color:#EBE9FF;width:14px;height:14px;border-radius:2px;border:1px gray solid;"></div>  |`In NGR without keyword - In CSV`| Record aanwezig in NGR maar zonder keyword `basisset NOVEX` en aanwezig in CSV bestand |
 &nbsp;
 
 
