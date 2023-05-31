@@ -22,7 +22,7 @@
           [ngClass]="getMatchedClass(element)"
         >
           <ng-template
-            [ngIf]="element.csvMatched !== csvMatched.RecordNotInCatalog"
+            [ngIf]="element.csvMatched !== csvMatched.NotInNgrInCSV"
             [ngIfElse]="recordNotInCatalog"
           >
             <a

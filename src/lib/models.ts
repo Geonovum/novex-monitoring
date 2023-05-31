@@ -18,11 +18,11 @@ export class Iso19115Record {
   ) {}
 }
 
-export enum csvMatched {
-  True = 'true',
-  False = 'false',
-  RecordNotInCatalog = 'recordNotInCatalog',
-  RecordInCatalogNoKeyword = 'RecordInCatalogNoKeyword'
+export enum NgrCsvMatch {
+  InNgrWithKwInCSV = 'In NGR with keyword - In CSV',
+  InNgrWithKwNotInCSV = 'In NGR with keyword - Not in CSV',
+  NotInNgrInCSV = 'Not in NGR - In CSV',
+  InNgrWithoutKwInCSV = 'In NGR without keyword - In CSV'
 }
 export class Iso19115RecordDiv extends Iso19115Record {
   constructor(
@@ -34,7 +34,7 @@ export class Iso19115RecordDiv extends Iso19115Record {
     public override resourceOwnerUrl?: string,
     public override protocols?: string[],
     public override onlineResources?: string[],
-    public csvMatched?: csvMatched
+    public csvMatched?: NgrCsvMatch
   ) {
     super(
       title,

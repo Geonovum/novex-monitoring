@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { isDevMode } from '@angular/core';
 
 import {
-  csvMatched,
+  NgrCsvMatch,
   Dictionary,
   Filter,
   Iso19115Record,
@@ -107,7 +107,7 @@ export class CswTableComponent implements OnInit {
   downloadResultSet(): void {
     let data = this.dataView;
     const replacer = (
-      value: string | boolean | null | undefined | csvMatched | string[]
+      value: string | boolean | null | undefined | NgrCsvMatch | string[]
     ) => {
       if (value === null || value === undefined) {
         return '""';
@@ -139,10 +139,6 @@ export class CswTableComponent implements OnInit {
     let csvArray = csv.join('\r\n');
     var blob = new Blob([csvArray], { type: 'text/csv' });
     saveAs(blob, 'myFile.csv');
-    // download JSON
-    // TODO: add dialog to choose download formats
-    // var blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    // saveAs(blob, 'myFile.json');
   }
 
   openDialog(): void {
@@ -159,10 +155,14 @@ export class CswTableComponent implements OnInit {
           (y) => y.mdId === x[this.mdIdColumnCsv]
         );
         if (cswRecord) {
-          cswRecord.csvMatched = csvMatched.True;
-          x['csvMatched'] = 'true';
+          cswRecord.csvMatched = NgrCsvMatch.InNgrWithKwInCSV;
+          x['csvMatched'] = NgrCsvMatch.InNgrWithKwInCSV;
         }
       });
+      this.dataSource
+        .filter((x) => x.csvMatched !== NgrCsvMatch.InNgrWithKwInCSV)
+        .map((x) => (x.csvMatched = NgrCsvMatch.InNgrWithKwNotInCSV));
+
       this.csvData
         .filter((x) => !Object.keys(x).includes('csvMatched'))
         .map((x) => (x['csvMatched'] = 'false'));
@@ -170,49 +170,71 @@ export class CswTableComponent implements OnInit {
       let csvRecordsNotMatched = this.csvData.filter(
         (x) => x['csvMatched'] === 'false'
       );
-      this.dataSource
-        .filter((x) => x.csvMatched !== csvMatched.True)
-        .map((x) => (x.csvMatched = csvMatched.False));
-
       let ids: string[] = csvRecordsNotMatched.map(
         (x) => x['metadata-identifier']
       );
-      cswRecordsExists(this.cswEndpoint, ids)
-        .then((result) => {
-          csvRecordsNotMatched.map((x) => {
-            let record = new Iso19115RecordDiv();
-            record.mdId = x[this.mdIdColumnCsv];
-            if (result[record.mdId]) {
-              record.csvMatched = csvMatched.RecordInCatalogNoKeyword;
-            } else {
-              record.csvMatched = csvMatched.RecordNotInCatalog;
+
+      let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
+
+      // retrieve records from csv that where not matched against NGR Novex keyword records
+      getCSWRecords(this.cswEndpoint, cqlQuery)
+        .then(
+          (
+            recordsNotInitallyFoundNGR: Iso19115Record[] | HttpErrorResponse
+          ) => {
+            let recordPromise: Iso19115Record[] =
+              recordsNotInitallyFoundNGR as Iso19115Record[];
+            recordsNotInitallyFoundNGR = recordPromise
+              .map((x) => x as Iso19115RecordDiv)
+              .sort(this.sortRecords);
+
+            for (const id of ids) {
+              let recordNI: Iso19115RecordDiv | undefined =
+                recordsNotInitallyFoundNGR.find(
+                  (x) => x.mdId === id
+                ) as Iso19115RecordDiv;
+              // if retrieved record in recordsNotInitallyFoundNGR, this record exists in NGR -> NgrCsvMatch.InNgrWithoutKwInCSV
+              if (recordNI !== undefined) {
+                recordNI.csvMatched = NgrCsvMatch.InNgrWithoutKwInCSV;
+                this.dataSource.push(recordNI);
+              } else {
+                // this mdId (id) has not been found in NGR at all -> NgrCsvMatch.InNgrWithoutKwInCSV
+                let newRecordNotInCatalog = new Iso19115RecordDiv();
+                newRecordNotInCatalog.mdId = id;
+                newRecordNotInCatalog.csvMatched = NgrCsvMatch.NotInNgrInCSV;
+                this.dataSource.push(newRecordNotInCatalog);
+              }
             }
-            this.dataSource.push(record);
+            this.displayedColumns.push('csvMatched');
+          }
+        )
+        .catch((e) => {
+          this.cswLoading = false;
+          this.dataSource = [];
+          this.dataView = this.dataSource;
+          this._snackBar.openFromComponent(HtmlSnackbarComponent, {
+            data: {
+              html: `<p>Ophalen van unmatched records uit NGR mislukt voor deze <a title="Bekijk deze CSW query in het NGR" target="_blank" href="${e.url}">query</a>. HTTP status code: ${e.status}</p>`,
+              error: true,
+            },
           });
-          this.displayedColumns.push('csvMatched');
-        })
-        .catch((error) => {
-          alert(
-            `something went wrong retrieving the unmatched records from the CSW service: ${this.cswEndpoint}, see the console.log for the specific error message.`
-          );
-          console.error(error);
-          this.dataSource = []; // TODO: improve above code so that if the call to cswRecordsExists nothing happened, now we reset the view to not show partial results
-          this.dataView = [];
         });
     });
   }
   public get csvMatched() {
-    return csvMatched;
+    return NgrCsvMatch;
   }
 
-  getTooltipCsvMatched(csvMatchedVal: csvMatched) {
+  getTooltipCsvMatched(csvMatchedVal: NgrCsvMatch) {
     switch (csvMatchedVal) {
-      case csvMatched.True:
+      case NgrCsvMatch.InNgrWithKwInCSV:
         return 'Record in NGR en in CSV bestand';
-      case csvMatched.False:
+      case NgrCsvMatch.InNgrWithKwNotInCSV:
         return 'Record in NGR maar niet in CSV bestand';
-      case csvMatched.RecordNotInCatalog:
+      case NgrCsvMatch.NotInNgrInCSV:
         return 'Record in CSV bestand maar niet in NGR';
+      case NgrCsvMatch.InNgrWithoutKwInCSV:
+        return 'Record in CSV bestand, in NGR maar zonder NOXEX keyword';
       default:
         return '';
     }
@@ -221,13 +243,13 @@ export class CswTableComponent implements OnInit {
   getMatchedClass(element: Iso19115RecordDiv) {
     if (this.csvData.length > 0) {
       switch (element.csvMatched) {
-        case csvMatched.True:
+        case NgrCsvMatch.InNgrWithKwInCSV:
           return 'inCsv';
-        case csvMatched.False:
+        case NgrCsvMatch.InNgrWithKwNotInCSV:
           return 'notInCsv';
-        case csvMatched.RecordNotInCatalog:
+        case NgrCsvMatch.NotInNgrInCSV:
           return 'notInNGR';
-        case csvMatched.RecordInCatalogNoKeyword:
+        case NgrCsvMatch.InNgrWithoutKwInCSV:
           return 'inNGRNoKeyword';
         default:
           return '';
