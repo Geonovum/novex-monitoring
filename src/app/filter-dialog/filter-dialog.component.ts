@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import {
-  csvMatched,
+  NgrCsvMatch,
   Dictionary,
   Filter,
   Iso19115RecordDiv,
@@ -15,7 +15,7 @@ import {
 export class FilterDialogComponent implements OnInit {
   dataSource: Iso19115RecordDiv[] = [];
   column: string = '';
-  filterValues: (string | string[] | csvMatched | undefined)[] = [];
+  filterValues: (string | string[] | NgrCsvMatch | undefined)[] = [];
   selectedValues: string[] = [];
 
   constructor(

@@ -6,7 +6,7 @@ export var getRecordsUrl = (
   cqlQuery: string,
   resultType: string = 'results'
 ): string => {
-  return `${cswEndpoint}?request=GetRecords&Service=CSW&Version=2.0.2&typeNames=gmd:MD_Metadata&constraint=${cqlQuery}&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&outputSchema=http://www.isotc211.org/2005/gmd&elementSetName=full&resultType=${resultType}`;
+  return `${cswEndpoint}/?request=GetRecords&Service=CSW&Version=2.0.2&typeNames=gmd:MD_Metadata&constraint=${cqlQuery}&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&outputSchema=http://www.isotc211.org/2005/gmd&elementSetName=full&resultType=${resultType}`;
 };
 
 export var cswRecordsExists = async (
