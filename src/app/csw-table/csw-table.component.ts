@@ -171,7 +171,7 @@ export class CswTableComponent implements OnInit {
         (x) => x['csvMatched'] === 'false'
       );
       let ids: string[] = csvRecordsNotMatched.map(
-        (x) => x['metadata-identifier']
+        (x) => x[this.mdIdColumnCsv]
       );
 
       let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
