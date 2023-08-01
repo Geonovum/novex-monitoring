@@ -172,7 +172,6 @@ export class CswTableComponent implements OnInit {
       let ids: string[] = csvRecordsNotMatched.map(
         (x) => x[this.mdIdColumnCsv]
       );
-
       if (ids.length > 0) {
         let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
         // retrieve records from csv that where not matched against NGR Novex keyword records
@@ -186,7 +185,6 @@ export class CswTableComponent implements OnInit {
               recordsNotInitallyFoundNGR = recordPromise
                 .map((x) => x as Iso19115RecordDiv)
                 .sort(this.sortRecords);
-
               for (const id of ids) {
                 let recordNI: Iso19115RecordDiv | undefined =
                   recordsNotInitallyFoundNGR.find(
@@ -204,9 +202,11 @@ export class CswTableComponent implements OnInit {
                   this.dataSource.push(newRecordNotInCatalog);
                 }
               }
+              this.displayedColumns.push('csvMatched'); // call triggers redraw of table causing new elements to be displayed
             }
           )
           .catch((e) => {
+            console.error(e)
             this.cswLoading = false;
             this.dataSource = [];
             this.dataView = this.dataSource;
@@ -217,8 +217,9 @@ export class CswTableComponent implements OnInit {
               },
             });
           });
+      } else {
+        this.displayedColumns.push('csvMatched');
       }
-      this.displayedColumns.push('csvMatched');
     });
   }
   public get csvMatched() {
@@ -234,7 +235,7 @@ export class CswTableComponent implements OnInit {
       case NgrCsvMatch.NotInNgrInCSV:
         return 'Record in CSV bestand maar niet in NGR';
       case NgrCsvMatch.InNgrWithoutKwInCSV:
-        return 'Record in CSV bestand, in NGR maar zonder NOXEX keyword';
+        return 'Record in CSV bestand, in NGR maar zonder NOVEX keyword';
       default:
         return '';
     }
