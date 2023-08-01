@@ -173,55 +173,52 @@ export class CswTableComponent implements OnInit {
         (x) => x[this.mdIdColumnCsv]
       );
 
-      if (ids.length === 0){
-        return
-      }
+      if (ids.length > 0) {
+        let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
+        // retrieve records from csv that where not matched against NGR Novex keyword records
+        getCSWRecords(this.cswEndpoint, cqlQuery)
+          .then(
+            (
+              recordsNotInitallyFoundNGR: Iso19115Record[] | HttpErrorResponse
+            ) => {
+              let recordPromise: Iso19115Record[] =
+                recordsNotInitallyFoundNGR as Iso19115Record[];
+              recordsNotInitallyFoundNGR = recordPromise
+                .map((x) => x as Iso19115RecordDiv)
+                .sort(this.sortRecords);
 
-      let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
-
-      // retrieve records from csv that where not matched against NGR Novex keyword records
-      getCSWRecords(this.cswEndpoint, cqlQuery)
-        .then(
-          (
-            recordsNotInitallyFoundNGR: Iso19115Record[] | HttpErrorResponse
-          ) => {
-            let recordPromise: Iso19115Record[] =
-              recordsNotInitallyFoundNGR as Iso19115Record[];
-            recordsNotInitallyFoundNGR = recordPromise
-              .map((x) => x as Iso19115RecordDiv)
-              .sort(this.sortRecords);
-
-            for (const id of ids) {
-              let recordNI: Iso19115RecordDiv | undefined =
-                recordsNotInitallyFoundNGR.find(
-                  (x) => x.mdId === id
-                ) as Iso19115RecordDiv;
-              // if retrieved record in recordsNotInitallyFoundNGR, this record exists in NGR -> NgrCsvMatch.InNgrWithoutKwInCSV
-              if (recordNI !== undefined) {
-                recordNI.csvMatched = NgrCsvMatch.InNgrWithoutKwInCSV;
-                this.dataSource.push(recordNI);
-              } else {
-                // this mdId (id) has not been found in NGR at all -> NgrCsvMatch.InNgrWithoutKwInCSV
-                let newRecordNotInCatalog = new Iso19115RecordDiv();
-                newRecordNotInCatalog.mdId = id;
-                newRecordNotInCatalog.csvMatched = NgrCsvMatch.NotInNgrInCSV;
-                this.dataSource.push(newRecordNotInCatalog);
+              for (const id of ids) {
+                let recordNI: Iso19115RecordDiv | undefined =
+                  recordsNotInitallyFoundNGR.find(
+                    (x) => x.mdId === id
+                  ) as Iso19115RecordDiv;
+                // if retrieved record in recordsNotInitallyFoundNGR, this record exists in NGR -> NgrCsvMatch.InNgrWithoutKwInCSV
+                if (recordNI !== undefined) {
+                  recordNI.csvMatched = NgrCsvMatch.InNgrWithoutKwInCSV;
+                  this.dataSource.push(recordNI);
+                } else {
+                  // this mdId (id) has not been found in NGR at all -> NgrCsvMatch.InNgrWithoutKwInCSV
+                  let newRecordNotInCatalog = new Iso19115RecordDiv();
+                  newRecordNotInCatalog.mdId = id;
+                  newRecordNotInCatalog.csvMatched = NgrCsvMatch.NotInNgrInCSV;
+                  this.dataSource.push(newRecordNotInCatalog);
+                }
               }
             }
-            this.displayedColumns.push('csvMatched');
-          }
-        )
-        .catch((e) => {
-          this.cswLoading = false;
-          this.dataSource = [];
-          this.dataView = this.dataSource;
-          this._snackBar.openFromComponent(HtmlSnackbarComponent, {
-            data: {
-              html: `<p>Ophalen van unmatched records uit NGR mislukt voor deze <a title="Bekijk deze CSW query in het NGR" target="_blank" href="${e.url}">query</a>. HTTP status code: ${e.status}</p>`,
-              error: true,
-            },
+          )
+          .catch((e) => {
+            this.cswLoading = false;
+            this.dataSource = [];
+            this.dataView = this.dataSource;
+            this._snackBar.openFromComponent(HtmlSnackbarComponent, {
+              data: {
+                html: `<p>Ophalen van unmatched records uit NGR mislukt voor deze <a title="Bekijk deze CSW query in het NGR" target="_blank" href="${e.url}">query</a>. HTTP status code: ${e.status}</p>`,
+                error: true,
+              },
+            });
           });
-        });
+      }
+      this.displayedColumns.push('csvMatched');
     });
   }
   public get csvMatched() {
