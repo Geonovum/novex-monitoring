@@ -149,7 +149,6 @@ export class CswTableComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: any) => {
       this.csvData = result.csvData;
       this.mdIdColumnCsv = result.mdIdColumn;
-
       this.csvData.map((x) => {
         let cswRecord = this.dataSource.find(
           (y) => y.mdId === x[this.mdIdColumnCsv]
@@ -173,6 +172,10 @@ export class CswTableComponent implements OnInit {
       let ids: string[] = csvRecordsNotMatched.map(
         (x) => x[this.mdIdColumnCsv]
       );
+
+      if (ids.length === 0){
+        return
+      }
 
       let cqlQuery = ids.map((x) => `identifier='${x}'`).join(' OR ');
 
