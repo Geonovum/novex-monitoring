@@ -20,7 +20,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 export function nameOf<T>(name: Extract<keyof T, string>): string {
   return name;
 }
-const DEFAULT_CQL_QUERY = "type='dataset' AND keyword='basisset novex'";
+const DEFAULT_CQL_QUERY = "type='dataset' AND (Subject='basisset novex' OR Subject='Basisset novex' OR Subject='basisset NOVEX' OR Subject='Basisset NOVEX')";
 
 @Component({
   selector: 'app-csw-table',
